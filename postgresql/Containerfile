@@ -1,0 +1,4 @@
+FROM docker.io/library/postgres:15
+
+VOLUME ["/var/lib/postgresql/data"]
+EXPOSE 5432
