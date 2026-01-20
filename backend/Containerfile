@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi10/go-toolset:10.1 AS builder
+FROM docker.io/library/golang:1.25.5 AS builder
 
 USER 0
 WORKDIR /src
