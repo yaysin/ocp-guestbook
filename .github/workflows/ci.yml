@@ -11,7 +11,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  NAMESPACE: ${{ github.repository_owner }}
+  NAMESPACE: yaysin
 
 jobs:
   build_push_scan:
@@ -79,3 +79,48 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
+
+  update_infra_manifests:
+    name: Update infra manifests with SHA tag
+    needs: build_push_scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone infra repo
+        run: |
+          git clone https://x-access-token:${{ secrets.INFRA_REPO_PAT }}@github.com/${{ secrets.INFRA_REPO }} infra
+
+      - name: Update image tags in infra manifests
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          NAMESPACE: ${{ env.NAMESPACE }}
+          SHA_TAG: sha-${{ github.sha }}
+          MANIFEST_DIR: infra/manifests
+        run: |
+          set -euo pipefail
+
+          BACKEND_IMAGE="${REGISTRY}/${NAMESPACE}/guestbook-backend:${SHA_TAG}"
+          FRONTEND_IMAGE="${REGISTRY}/${NAMESPACE}/guestbook-frontend:${SHA_TAG}"
+
+          echo "Setting backend image to:  ${BACKEND_IMAGE}"
+          echo "Setting frontend image to: ${FRONTEND_IMAGE}"
+
+          sed -i "s|^\(\s*image:\s*\)${REGISTRY}/${NAMESPACE}/guestbook-backend:.*|\1${BACKEND_IMAGE}|g" "${MANIFEST_DIR}/backend.yaml"
+          sed -i "s|^\(\s*image:\s*\)${REGISTRY}/${NAMESPACE}/guestbook-frontend:.*|\1${FRONTEND_IMAGE}|g" "${MANIFEST_DIR}/frontend.yaml"
+
+      - name: Commit and push changes
+        env:
+          SHA_TAG: sha-${{ github.sha }}
+        run: |
+          cd infra
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Deploy: ${SHA_TAG}"
+          git push
