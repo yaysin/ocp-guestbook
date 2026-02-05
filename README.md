@@ -153,3 +153,5 @@ kommunicera med Redis!
 6. Varför bör känsliga data ligga i Secrets istället för ConfigMaps?
 7. Hur kan vi implementera horizontal pod autoscaling?
 
+
+test
