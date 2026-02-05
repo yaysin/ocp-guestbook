@@ -154,4 +154,3 @@ kommunicera med Redis!
 7. Hur kan vi implementera horizontal pod autoscaling?
 
 
-test
